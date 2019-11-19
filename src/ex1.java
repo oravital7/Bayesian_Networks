@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -10,9 +11,12 @@ public class ex1 {
 	}
 
 	private HashMap<String, Var> mNetWork;
+	private BayesBall mbaseBallAlg;
 
-	public ex1() {
+	public ex1() 
+	{
 		mNetWork = new HashMap<String, Var>();
+		mbaseBallAlg = new BayesBall(mNetWork);
 	}
 
 	public void start() 
@@ -26,12 +30,28 @@ public class ex1 {
 			String lineInput = sc.nextLine();
 			buildVariables(lineInput.substring(lineInput.indexOf(' ') + 1));
 			buildVar(sc);
-
+			String result = startAnswer(sc);
 			sc.close();
 		} catch (FileNotFoundException e) {
 			System.out.println("Unable read 'input.txt', please make sure file exists!");
 		}
 		printNet();
+	}
+
+	private String startAnswer(Scanner sc) {
+		String result = "", line = "";
+		while(sc.hasNextLine())
+		{
+			line = sc.nextLine();
+			if (line.contains("-"))
+			{	
+				System.out.println(line);
+				mbaseBallAlg.startCalculate(line);
+			}
+			
+		}
+
+		return null;
 	}
 
 	private void buildVariables(String lineInput) 
@@ -95,66 +115,112 @@ public class ex1 {
 			System.out.println(v);
 		}
 	}
+}
 
-	class Var {
+class Var {
 
-		private ArrayList<String> mParents, mChilds, mValues;
-		private String mName, mCPT[][];
+	private ArrayList<String> mParents, mChilds, mValues;
+	private String mName, mCPT[][];
+	private int mCurrentRow;
+	boolean mShadeFlag;
+	//		private HashMap<String, Double> mCPTh;
 
-		public Var(String name) {
-			mName = name;
-			mParents = new ArrayList<String>();
-			mChilds = new ArrayList<String>();
-			mValues = new ArrayList<String>();
-		}
-
-		public void initCPT(int rows) 
-		{
-			mCPT = new String[rows][mParents.size() + 2];
-		}
-
-		public void addValues(String values) 
-		{
-			for (String value : values.split(","))
-			{
-				mValues.add(value);
-			}
-		}
-
-		public void addParents(String parent) 
-		{
-			mParents.add(parent);
-		}
-
-		public void addCPT(String string) 
-		{
-
-		}
-
-		public void addChild(String child)
-		{
-			mChilds.add(child);
-		}
-
-		public String getName()
-		{
-			return mName;
-		}
-
-		public ArrayList<String> getParents() {
-			return mParents;
-		}
-
-		public int NumberOfValues()
-		{
-			return mValues.size();
-		}
-
-		@Override
-		public String toString() {
-			return "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
-					", mCPT= rows: " + mCPT.length + " cols: " + mCPT[0].length + "]";
-		}
-
+	public Var(String name)
+	{
+		mName = name;
+		mParents = new ArrayList<String>();
+		mChilds = new ArrayList<String>();
+		mValues = new ArrayList<String>();
+		mCurrentRow = 0;
+		mShadeFlag = false;
+		//			mCPTh = new HashMap<String, Double>();
 	}
+
+	public void initCPT(int rows) 
+	{
+		mCPT = new String[rows][mParents.size() + 2];
+	}
+
+	public void addValues(String values) 
+	{
+		for (String value : values.split(","))
+		{
+			mValues.add(value);
+		}
+	}
+
+	public void addParents(String parent) 
+	{
+		mParents.add(parent);
+	}
+
+	public void addCPT(String value) 
+	{
+		if (value.length() == 0)
+			return;
+
+		String valueArr[] = value.split(",");
+		ArrayList<String> temp = new ArrayList<String>();
+		int col = 0;
+		boolean foundFirstEqual = false;
+		String val = "";
+		for (int i = 0; i < valueArr.length; i++)
+		{
+			if (!foundFirstEqual)
+			{
+				if (valueArr[i].contains("="))
+				{
+					foundFirstEqual = true;
+					val = valueArr[i].substring(1);
+				}
+				else
+				{
+					val = valueArr[i];
+					temp.add(val);
+				}
+
+			}
+			else if (valueArr[i].contains("="))
+			{
+				mCurrentRow++; col = 0;
+				for (int j = 0; j < temp.size(); j++)
+					mCPT[mCurrentRow][col++] = temp.get(j);
+
+				val = valueArr[i].substring(1);
+			}
+			else
+			{
+				val  = valueArr[i];
+			}
+
+			mCPT[mCurrentRow][col++] = val;
+		}
+		mCurrentRow++;
+	}
+
+	public void addChild(String child)
+	{
+		mChilds.add(child);
+	}
+
+	public String getName()
+	{
+		return mName;
+	}
+
+	public ArrayList<String> getParents() {
+		return mParents;
+	}
+
+	public int NumberOfValues()
+	{
+		return mValues.size();
+	}
+
+	@Override
+	public String toString() {
+		return "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
+				", mCPT= rows: " + mCPT.length + " cols: " + mCPT[0].length + " mShadeFlag: " + mShadeFlag + "]";
+	}
+
 }
