@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start();
+		new ex1().start();		
 	}
 
 	private HashMap<String, Var> mNetWork;
@@ -38,20 +38,22 @@ public class ex1 {
 		printNet();
 	}
 
-	private String startAnswer(Scanner sc) {
+	private String startAnswer(Scanner sc) 
+	{
 		String result = "", line = "";
 		while(sc.hasNextLine())
 		{
 			line = sc.nextLine();
-			if (line.contains("-"))
-			{	
-				System.out.println(line);
-				mbaseBallAlg.startCalculate(line);
-			}
+			if (line.charAt(0) == 'P' || line.charAt(0) == 'p')
+				System.out.println("line: " + line);
+			else
+				result += mbaseBallAlg.startCalculate(line);
 			
+			if (sc.hasNextLine())
+				result += '\n';
 		}
-
-		return null;
+		System.out.println(result);
+		return result;
 	}
 
 	private void buildVariables(String lineInput) 
@@ -123,7 +125,6 @@ class Var {
 	private String mName, mCPT[][];
 	private int mCurrentRow;
 	boolean mShadeFlag;
-	//		private HashMap<String, Double> mCPTh;
 
 	public Var(String name)
 	{
@@ -133,7 +134,6 @@ class Var {
 		mValues = new ArrayList<String>();
 		mCurrentRow = 0;
 		mShadeFlag = false;
-		//			mCPTh = new HashMap<String, Double>();
 	}
 
 	public void initCPT(int rows) 
@@ -154,71 +154,94 @@ class Var {
 		mParents.add(parent);
 	}
 
-	public void addCPT(String value) 
+	//	public void addCPT(String value) 
+	//	{
+	//		if (value.length() == 0)
+	//			return;
+	//
+	//		String valueArr[] = value.split(",");
+	//		ArrayList<String> temp = new ArrayList<String>();
+	//		int col = 0;
+	//		boolean foundFirstEqual = false;
+	//		String val = "";
+	//		for (int i = 0; i < valueArr.length; i++)
+	//		{
+	//			if (!foundFirstEqual)
+	//			{
+	//				if (valueArr[i].contains("="))
+	//				{
+	//					foundFirstEqual = true;
+	//					val = valueArr[i].substring(1);
+	//				}
+	//				else
+	//				{
+	//					val = valueArr[i];
+	//					temp.add(val);
+	//				}
+	//
+	//			}
+	//			else if (valueArr[i].contains("="))
+	//			{
+	//				mCurrentRow++; col = 0;
+	//				for (int j = 0; j < temp.size(); j++)
+	//					mCPT[mCurrentRow][col++] = temp.get(j);
+	//
+	//				val = valueArr[i].substring(1);
+	//			}
+	//			else
+	//			{
+	//				val  = valueArr[i];
+	//			}
+	//
+	//			mCPT[mCurrentRow][col++] = val;
+	//		}
+	//		mCurrentRow++;
+	//	}
+
+	public void addCPT(String value)
 	{
 		if (value.length() == 0)
 			return;
 
 		String valueArr[] = value.split(",");
-		ArrayList<String> temp = new ArrayList<String>();
+
+		String tempEvidences[] = new String[mParents.size()];
 		int col = 0;
-		boolean foundFirstEqual = false;
-		String val = "";
+
 		for (int i = 0; i < valueArr.length; i++)
 		{
-			if (!foundFirstEqual)
+			if (i < mParents.size())
 			{
-				if (valueArr[i].contains("="))
-				{
-					foundFirstEqual = true;
-					val = valueArr[i].substring(1);
-				}
-				else
-				{
-					val = valueArr[i];
-					temp.add(val);
-				}
-
+				tempEvidences[i] = valueArr[i];
 			}
 			else if (valueArr[i].contains("="))
 			{
-				mCurrentRow++; col = 0;
-				for (int j = 0; j < temp.size(); j++)
-					mCPT[mCurrentRow][col++] = temp.get(j);
+				for (String evidence : tempEvidences)
+					mCPT[mCurrentRow][col++] = evidence;
 
-				val = valueArr[i].substring(1);
+				mCPT[mCurrentRow][col++] = valueArr[i].substring(1);
 			}
 			else
 			{
-				val  = valueArr[i];
+				mCPT[mCurrentRow++][col] = valueArr[i];
+				col = 0;
 			}
-
-			mCPT[mCurrentRow][col++] = val;
 		}
-		mCurrentRow++;
 	}
 
-	public void addChild(String child)
-	{
-		mChilds.add(child);
-	}
+	public void addChild(String child) { mChilds.add(child); }
 
-	public String getName()
-	{
-		return mName;
-	}
+	public String getName() { return mName; }
 
-	public ArrayList<String> getParents() {
-		return mParents;
-	}
+	public ArrayList<String> getParents() { return mParents; }
+	
+	public ArrayList<String> getChilds() { return mChilds; }
 
-	public int NumberOfValues()
-	{
-		return mValues.size();
-	}
+	public int NumberOfValues()	{ return mValues.size(); }
 
 	@Override
-	public String toString() {
+	public String toString() 
+	{
 		return "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
 				", mCPT= rows: " + mCPT.length + " cols: " + mCPT[0].length + " mShadeFlag: " + mShadeFlag + "]";
 	}
