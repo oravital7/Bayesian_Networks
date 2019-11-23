@@ -3,52 +3,58 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Scanner;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start();		
+		new ex1().start("input.txt");		
 	}
 
 	private HashMap<String, Var> mNetWork;
-	private BayesBall mbaseBallAlg;
 
-	public ex1() 
+	public void start(String inputPath) 
 	{
 		mNetWork = new HashMap<String, Var>();
-		mbaseBallAlg = new BayesBall(mNetWork);
-	}
-
-	public void start() 
-	{
-		File input = new File("input.txt");
-
+		BayesBall baseBallAlg = new BayesBall(mNetWork);
+		VariableElimination variableEliminationAlg = new VariableElimination(mNetWork);
+		
+		File fileInput = new File(inputPath);
+		Scanner sc;
 		try {
-			Scanner sc = new Scanner(input);
+			sc = new Scanner(fileInput);
 			sc.nextLine();
 
 			String lineInput = sc.nextLine();
-			buildVariables(lineInput.substring(lineInput.indexOf(' ') + 1));
-			buildVar(sc);
-			String result = startAnswer(sc);
+			buildVars(lineInput.substring(lineInput.indexOf(' ') + 1));
+			buildVarProperties(sc);
+			String result = startAnswer(sc, baseBallAlg, variableEliminationAlg);
+
 			sc.close();
 		} catch (FileNotFoundException e) {
-			System.out.println("Unable read 'input.txt', please make sure file exists!");
+			System.out.println("Unable read '"+ inputPath + "' , please make sure file exists!");
+		} catch (Exception e) {
+			System.out.println("Something get wrong");
+			e.printStackTrace();
 		}
 		printNet();
 	}
 
-	private String startAnswer(Scanner sc) 
+	/* ***************************************************
+	 ***************** Private Methods *****************
+	 *************************************************** */
+
+	private String startAnswer(Scanner sc, BayesBall baseBallAlg, VariableElimination variableEliminationAlg) 
 	{
-		String result = "", line = "";
+		String result = "", query = "";
 		while(sc.hasNextLine())
 		{
-			line = sc.nextLine();
-			if (line.charAt(0) == 'P' || line.charAt(0) == 'p')
-				System.out.println("line: " + line);
+			query = sc.nextLine();
+			if (query.charAt(0) == 'P' || query.charAt(0) == 'p')
+				result += variableEliminationAlg.getQueryResult(query);
 			else
-				result += mbaseBallAlg.startCalculate(line);
-			
+				result += baseBallAlg.getQueryResult(query);
+
 			if (sc.hasNextLine())
 				result += '\n';
 		}
@@ -56,15 +62,13 @@ public class ex1 {
 		return result;
 	}
 
-	private void buildVariables(String lineInput) 
+	private void buildVars(String lineInput) 
 	{
 		for (String var : lineInput.split(","))
-		{
 			mNetWork.put(var, new Var(var));
-		}
 	}
 
-	private void buildVar(Scanner sc) 
+	private void buildVarProperties(Scanner sc) 
 	{
 		String inputLine = "";
 
@@ -77,7 +81,7 @@ public class ex1 {
 				var.addValues(sc.nextLine().split(" ")[1]);
 				addParents(sc.nextLine().split(" ")[1], var);
 				sc.nextLine();
-				initCPT(var);
+
 				while (!inputLine.isEmpty())
 				{
 					inputLine = sc.nextLine();
@@ -85,16 +89,6 @@ public class ex1 {
 				}
 			}
 		}
-	}
-
-	private void initCPT(Var var) 
-	{
-		int rows = 1;
-		for (String varParent : var.getParents())
-		{
-			rows *= mNetWork.get(varParent).NumberOfValues(); 
-		}
-		var.initCPT(rows * (var.NumberOfValues() - 1));
 	}
 
 	private void addParents(String parents, Var var) 
@@ -122,7 +116,8 @@ public class ex1 {
 class Var {
 
 	private ArrayList<String> mParents, mChilds, mValues;
-	private String mName, mCPT[][];
+	private ArrayList<String[]> mCPT;
+	private String mName;
 	private int mCurrentRow;
 	boolean mShadeFlag;
 
@@ -132,77 +127,41 @@ class Var {
 		mParents = new ArrayList<String>();
 		mChilds = new ArrayList<String>();
 		mValues = new ArrayList<String>();
+		mCPT = new ArrayList<String[]>();
 		mCurrentRow = 0;
 		mShadeFlag = false;
 	}
-
-	public void initCPT(int rows) 
+	
+	public Var(Var var)
 	{
-		mCPT = new String[rows][mParents.size() + 2];
+		mName = var.mName;
+		mParents = var.mParents;
+		mChilds = var.mChilds;
+		mValues = var.mValues;
+		mCPT = new ArrayList<String[]>(var.mCPT);
+		mCurrentRow = var.mCurrentRow;
+		mShadeFlag = var.mShadeFlag;
 	}
 
 	public void addValues(String values) 
 	{
 		for (String value : values.split(","))
-		{
 			mValues.add(value);
-		}
 	}
 
 	public void addParents(String parent) 
-	{
-		mParents.add(parent);
+	{ 
+		mParents.add(parent); 
 	}
-
-	//	public void addCPT(String value) 
-	//	{
-	//		if (value.length() == 0)
-	//			return;
-	//
-	//		String valueArr[] = value.split(",");
-	//		ArrayList<String> temp = new ArrayList<String>();
-	//		int col = 0;
-	//		boolean foundFirstEqual = false;
-	//		String val = "";
-	//		for (int i = 0; i < valueArr.length; i++)
-	//		{
-	//			if (!foundFirstEqual)
-	//			{
-	//				if (valueArr[i].contains("="))
-	//				{
-	//					foundFirstEqual = true;
-	//					val = valueArr[i].substring(1);
-	//				}
-	//				else
-	//				{
-	//					val = valueArr[i];
-	//					temp.add(val);
-	//				}
-	//
-	//			}
-	//			else if (valueArr[i].contains("="))
-	//			{
-	//				mCurrentRow++; col = 0;
-	//				for (int j = 0; j < temp.size(); j++)
-	//					mCPT[mCurrentRow][col++] = temp.get(j);
-	//
-	//				val = valueArr[i].substring(1);
-	//			}
-	//			else
-	//			{
-	//				val  = valueArr[i];
-	//			}
-	//
-	//			mCPT[mCurrentRow][col++] = val;
-	//		}
-	//		mCurrentRow++;
-	//	}
 
 	public void addCPT(String value)
 	{
 		if (value.length() == 0)
 			return;
 
+		ArrayList<String> completeValue = new ArrayList<String>(mValues);
+		double completeValueProb = 0;
+		
 		String valueArr[] = value.split(",");
 
 		String tempEvidences[] = new String[mParents.size()];
@@ -216,17 +175,27 @@ class Var {
 			}
 			else if (valueArr[i].contains("="))
 			{
+				mCPT.add(new String[mParents.size() + 2]);
 				for (String evidence : tempEvidences)
-					mCPT[mCurrentRow][col++] = evidence;
+					mCPT.get(mCurrentRow)[col++] = evidence;
 
-				mCPT[mCurrentRow][col++] = valueArr[i].substring(1);
+				mCPT.get(mCurrentRow)[col++] = valueArr[i].substring(1);
+				completeValue.remove(valueArr[i].substring(1));
 			}
 			else
 			{
-				mCPT[mCurrentRow++][col] = valueArr[i];
+				mCPT.get(mCurrentRow++)[col] = valueArr[i];
+				completeValueProb += Double.parseDouble(valueArr[i]);
 				col = 0;
 			}
 		}
+		mCPT.add(new String[mParents.size() + 2]);
+		for (String evidence : tempEvidences)
+			mCPT.get(mCurrentRow)[col++] = evidence;
+		
+		mCPT.get(mCurrentRow)[col++] = completeValue.get(0);
+		mCPT.get(mCurrentRow++)[col] = "" + (1 - completeValueProb);
+
 	}
 
 	public void addChild(String child) { mChilds.add(child); }
@@ -234,16 +203,23 @@ class Var {
 	public String getName() { return mName; }
 
 	public ArrayList<String> getParents() { return mParents; }
-	
+
 	public ArrayList<String> getChilds() { return mChilds; }
+	
+	public ArrayList<String[]> getCPT() { return mCPT; }
+
 
 	public int NumberOfValues()	{ return mValues.size(); }
-
+	
 	@Override
 	public String toString() 
 	{
-		return "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
-				", mCPT= rows: " + mCPT.length + " cols: " + mCPT[0].length + " mShadeFlag: " + mShadeFlag + "]";
-	}
+		String result = "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
+				", mCPT= " + mCPT.size() + ", mShadeFlag:"  + mShadeFlag + "]\nCPT: \n";
+		
+		for (String s[] : mCPT)
+			result += Arrays.toString(s) + '\n';
 
+		return result;
+	}
 }

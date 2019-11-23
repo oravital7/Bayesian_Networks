@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -8,12 +7,12 @@ public class BayesBall {
 	private HashMap<String, Var> mNetWork;
 	private final String independent = "yes", dependent = "no";
 
-	public BayesBall(HashMap<String, Var> NetWork)
+	public BayesBall(HashMap<String, Var> netWork)
 	{
-		mNetWork = NetWork;
+		mNetWork = netWork;
 	}
 
-	public String startCalculate(String query)
+	public String getQueryResult(String query)
 	{
 		String temp[] = query.split("\\|");
 
@@ -24,12 +23,9 @@ public class BayesBall {
 
 		if (temp.length > 1)
 		{
-			String evidence[] = temp[1].split(",");
+			for (String evidence : temp[1].split(","))
+				evidenceNodes.add(evidence.split("=")[0]);
 
-			for (String val : evidence)
-			{
-				evidenceNodes.add(val.substring(0, val.indexOf('=')));
-			}
 			shadesOrResetNet(evidenceNodes, true);
 		}
 
@@ -39,12 +35,19 @@ public class BayesBall {
 		return result;
 	}
 
+	/* ***************************************************
+	 ***************** Private Methods *****************
+	 *************************************************** */
+
+	/**
+	 * 
+	 * @param paths
+	 * @return
+	 */
 	private String acitvePaths(ArrayList<Node[]> paths) 
 	{
 		for (Node path[] : paths)
 		{
-			System.out.println(Arrays.toString(path));
-
 			boolean isActive = true;
 			for (int i = 1; i < path.length - 1 && isActive; i++)
 			{
@@ -55,7 +58,7 @@ public class BayesBall {
 				}
 				else if (!currentNode.mShadeFlag && path[i].prevIsParent() && !path[i + 1].prevIsParent())
 				{
-					isActive = dfsSearchShadeNode(currentNode);
+					isActive = dfsSearchShadeNode(currentNode, new HashSet<String>());
 				}
 			}
 
@@ -64,26 +67,22 @@ public class BayesBall {
 		return independent;
 	}
 
-	private boolean dfsSearchShadeNode(Var currentNode) 
-	{
-		HashSet<String> visited = new HashSet<String>();
-		return dfsSearchShadeNode(currentNode, visited);
-	}
-
 	private boolean dfsSearchShadeNode(Var currentNode, HashSet<String> visited) {
 		if (currentNode.mShadeFlag)
 			return true;
 
+		boolean result = false;
 		for (String var : currentNode.getChilds())
 		{
 			if (!visited.contains(var))
 			{
 				visited.add(var);
-				return dfsSearchShadeNode(mNetWork.get(var), visited);
+				result = result || dfsSearchShadeNode(mNetWork.get(var), visited);
+				if (result) return true;
 			}
 		}
 
-		return false;
+		return result;
 	}
 
 	private ArrayList<Node[]> makePaths(String source, String target) 
@@ -150,7 +149,7 @@ public class BayesBall {
 
 class Node {
 
-	private boolean mPrevIsParent;
+	private boolean mPrevIsParent;  //  Edge created from son or parent
 	private String mNodeName;
 
 	public Node(String node, boolean nextIsParent)
@@ -159,25 +158,20 @@ class Node {
 		mNodeName = node;
 	}
 
-	public boolean prevIsParent() {
-		return mPrevIsParent;
-	}
-
 	public Node(Node edge)
 	{
 		mPrevIsParent = edge.mPrevIsParent;
 		mNodeName = edge.mNodeName;
 	}
 
-	public String getName()
-	{
-		return mNodeName;
-	}
+	public boolean prevIsParent() { return mPrevIsParent; }
+
+	public String getName()	{ return mNodeName; }
 
 	@Override
 	public String toString() 
 	{
 		return "Node [mPrevIsParent=" + mPrevIsParent + ", mNodeName=" + mNodeName + "]";
 	}
-	
+
 }
