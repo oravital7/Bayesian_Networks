@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 public class VariableElimination {
 
@@ -71,25 +72,83 @@ public class VariableElimination {
 
 		cleanCPTevidences(var1, evidences);
 		cleanCPTevidences(var2, evidences);
-		
-		joinVars(var1, var2, result);
+
+		joinVars(var1, var2, result, evidences);
+
+		factors.remove(var1);
+		factors.remove(var2);
+
+		factors.add(result);
 	}
 
-	private void joinVars(Var var1, Var var2, Var result) 
+	private void joinVars(Var var1, Var var2, Var result, HashMap<String, String> evidences) 
 	{
+		HashMap<String, Integer> sharedVariable = makeSharedVariables(var1, var2, evidences);
+		System.out.println(sharedVariable);
+
 		for (int i = 0; i < var1.getCPT().size(); i++)
 		{
 			for (int j = 0; j < var2.getCPT().size(); j++)
 			{
-				
+				boolean isMatchRow = true;
+
+				for (Map.Entry<String, Integer> set : sharedVariable.entrySet())
+				{
+					if (set.getValue() == 2 && !var1.getCPT().get(i)[var1.indexOf(set.getKey())].
+							equals(var2.getCPT().get(j)[var2.indexOf(set.getKey())]))
+					{
+						isMatchRow = false;
+						break;
+					}
+				}
+
+				if (isMatchRow)
+				{
+					result.addEmptyRow();
+					fillRow(var1, i, result);
+					fillRow(var2, j, result);
+					multiplyCol(var1.getCPT().get(i), var2.getCPT().get(j), result);
+				}
 			}
 		}
 	}
 
+	private void multiplyCol(String[] var1, String[] var2, Var result) 
+	{
+		double newValue = Double.parseDouble(var1[var1.length - 1]) * Double.parseDouble(var2[var2.length - 1]);
+		result.fillRow("" + newValue, result.getParents().size() + 1);
+	}
+
+	private void fillRow(Var var, int indexRowVar, Var result)
+	{
+		for (int k = 0; k < var.getParents().size(); k++)
+		{
+			String currentName = var.getParents().get(k);
+			int IndexOfCurrent = result.indexOf(currentName);
+			if (IndexOfCurrent != -1)
+			{
+				String value = var.getCPT().get(indexRowVar)[k];
+				result.fillRow(value, IndexOfCurrent);
+			}
+		}
+
+		int indexOfCurrent = result.indexOf(var.getName());
+		if (indexOfCurrent != -1)
+		{
+			String value = var.getCPT().get(indexRowVar)[var.getParents().size()];
+			result.fillRow(value, indexOfCurrent);
+		}
+	}
+
+	/**
+	 * Clean unnecessary rows from the CPT, prepare to join
+	 * @param var - var to clean
+	 * @param evidences
+	 */
 	private void cleanCPTevidences(Var var, HashMap<String, String> evidences) 
 	{
 		evidences.forEach((key, value) -> {
-			int keyCPTindex = var.getParents().indexOf(key);
+			int keyCPTindex = var.indexOf(key);
 			if (keyCPTindex != -1)
 			{
 				for (int i = 0; i < var.getCPT().size(); i++)
@@ -101,6 +160,13 @@ public class VariableElimination {
 		});
 	}
 
+	/**
+	 * Init parent of the new result by join
+	 * @param newVar - the reuslt of the join
+	 * @param var
+	 * @param evidences
+	 * @param hiddenVar
+	 */
 	private void initNewVarParent(Var newVar, Var var, HashMap<String, String> evidences, String hiddenVar)
 	{
 		for (String parent : var.getParents())
@@ -111,7 +177,7 @@ public class VariableElimination {
 	}
 
 	private void sumFactors(String hiddenVar, int i, ArrayList<Var> factors, HashMap<String, String> evidences) {
-		// TODO Auto-generated method stub
+		System.out.println("hello sum factors " + factors);
 
 	}
 
@@ -222,29 +288,46 @@ public class VariableElimination {
 
 	private int calcRows(Var var1, Var var2, HashMap<String, String> evidences) 
 	{
-		HashSet<String> sharedVars = new HashSet<String>();
+		HashMap<String, Integer> sharedVars = makeSharedVariables(var1, var2, evidences);
+
+		int result = 1;
+		for (String var : sharedVars.keySet())
+			result *= mNetWork.get(var).NumberOfValues();
+
+		return result;
+	}
+
+	HashMap<String, Integer> makeSharedVariables(Var var1, Var var2, HashMap<String, String> evidences)
+	{
+		HashMap<String, Integer> sharedVars = new HashMap<String, Integer>();
 
 		if (!evidences.containsKey(var1.getName()))
-			sharedVars.add(var1.getName());
+			addToMap(var1.getName(), sharedVars);
 
 		if (!evidences.containsKey(var2.getName()))
-			sharedVars.add(var2.getName());
+			addToMap(var2.getName(), sharedVars);
 
 		for (String parent : var1.getParents())
 		{
 			if (!evidences.containsKey(parent))
-				sharedVars.add(parent);
+				addToMap(parent, sharedVars);
 		}
 
 		for (String parent : var2.getParents())
+		{
 			if (!evidences.containsKey(parent))
-				sharedVars.add(parent);
+				addToMap(parent, sharedVars);
+		}
 
-		int result = 1;
-		for (String var : sharedVars)
-			result *= mNetWork.get(var).NumberOfValues();
+		return sharedVars;
+	}
 
-		return result;
+	private void addToMap(String name, HashMap<String, Integer> sharedVars) 
+	{
+		if (sharedVars.containsKey(name))
+			sharedVars.put(name, sharedVars.get(name) + 1);
+		else
+			sharedVars.put(name, 1);
 	}
 
 	private ArrayList<Integer> containsHidden(String hiddenVar, ArrayList<Var> factors) 
