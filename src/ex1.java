@@ -10,7 +10,7 @@ import javafx.scene.Parent;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start("input.txt");
+		new ex1().start("input2.txt");
 	}
 
 	private HashMap<String, Var> mNetWork;
@@ -39,7 +39,7 @@ public class ex1 {
 			System.out.println("Something get wrong");
 			e.printStackTrace();
 		}
-		printNet();
+//		printNet();
 	}
 
 	/* ***************************************************
@@ -248,6 +248,14 @@ class Var {
 
 	public ArrayList<String[]> getCPT() { return mCPT; }
 
+//	public void clear()
+//	{
+//		mParents.clear();
+//		mChilds.clear();
+//		mValues.clear();
+//		mCPT.clear();
+//		mCachedIndex.clear();
+//	}
 
 	public int NumberOfValues()	{ return mValues.size(); }
 

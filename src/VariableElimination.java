@@ -11,7 +11,6 @@ public class VariableElimination {
 	public VariableElimination(HashMap<String, Var> netWork) 
 	{
 		mNetWork = netWork;
-
 	}
 
 	public String getQueryResult(String query)
@@ -23,7 +22,6 @@ public class VariableElimination {
 
 		if (!subQueryHidden.isEmpty())
 			hidden = subQueryHidden.split("-");
-
 		for (String tempEvidence : query.substring(query.indexOf('|') + 1, query.indexOf(')')).split(","))
 			evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
 		System.out.println("newwwwwwwwwwwwwwwwww");
@@ -41,22 +39,43 @@ public class VariableElimination {
 			{
 				int indexMinimalPair[] = findMinimalPair(hiddenVar, factors, evidences);
 				if (indexMinimalPair == null)
+				{
 					break;
+				}
 				else if (indexMinimalPair.length == 1)
-					sumFactors(hiddenVar, indexMinimalPair[0], factors, evidences);
+				{
+					Var newVar = sumFactors(hiddenVar, factors.get(indexMinimalPair[0]));
+					factors.remove(indexMinimalPair[0]);
+					factors.add(newVar);
+				}
 				else
 				{
 					joinFactors(hiddenVar, indexMinimalPair, factors, evidences);
 				}
 			}
-		}
-		//		System.out.println("START PRINITG FACTORS");
-		//		for(Var v : factors)
-		//		{
-		//			System.out.println(v);
-		//		}
-		//		System.out.println("FINISH PRINITG FACTORS");
 
+
+		}
+		while (factors.size() > 1)
+		{
+			int indexs[] = {0, 1};
+			joinFactors(varQuery[0], indexs, factors, evidences);
+		}
+		
+		normalize(factors.get(0));
+
+		System.out.println("factors:");
+		System.out.println(factors);
+	}
+
+	private void normalize(Var var) 
+	{
+		double sumRows = 0;
+		for (String row[] : var.getCPT())
+			sumRows += Double.parseDouble(row[row.length - 1]);
+		
+		for (String row[] : var.getCPT())
+			row[row.length - 1] = "" + (Double.parseDouble(row[row.length - 1]) / sumRows);
 	}
 
 	private void joinFactors(String hiddenVar, int[] indexMinimalPair, ArrayList<Var> factors, HashMap<String, String> evidences)
@@ -64,8 +83,9 @@ public class VariableElimination {
 		Var var1 = factors.get(indexMinimalPair[0]);
 		Var var2 = factors.get(indexMinimalPair[1]);
 		Var result = new Var(hiddenVar);
+		System.out.println("join var1: " + var1 + " var2: " + var2);
 
-		System.out.println("choose: " + var1.getName() +", " + var2.getName() + " hiddenVar: " + hiddenVar);
+		//		System.out.println("choose: " + var1.getName() +", " + var2.getName() + " hiddenVar: " + hiddenVar);
 
 		initNewVarParent(result, var1, evidences, hiddenVar);
 		initNewVarParent(result, var2, evidences, hiddenVar);
@@ -84,7 +104,7 @@ public class VariableElimination {
 	private void joinVars(Var var1, Var var2, Var result, HashMap<String, String> evidences) 
 	{
 		HashMap<String, Integer> sharedVariable = makeSharedVariables(var1, var2, evidences);
-		System.out.println(sharedVariable);
+		//		System.out.println(sharedVariable);
 
 		for (int i = 0; i < var1.getCPT().size(); i++)
 		{
@@ -174,11 +194,85 @@ public class VariableElimination {
 			if (!evidences.containsKey(parent) && !parent.equals(hiddenVar) && !newVar.getParents().contains(parent))
 				newVar.addParents(parent);
 		}
+		
+		if (!evidences.containsKey(var.getName()) && !var.getName().equals(hiddenVar) && !var.getParents().contains(var.getName()))
+			newVar.addParents(var.getName());
 	}
 
-	private void sumFactors(String hiddenVar, int i, ArrayList<Var> factors, HashMap<String, String> evidences) {
-		System.out.println("hello sum factors " + factors);
+	private Var sumFactors(String hiddenVar, Var var) 
+	{
+		//		System.out.println(var);
+		int indexOfHidden = var.indexOf(hiddenVar);
+		boolean isRowCalculated[] = new boolean[var.getCPT().size()];
+		ArrayList<String[]> varCPT = var.getCPT();
+		Var newVar = initNewVarSum(var, hiddenVar);
+		//		System.out.println("new var: " + newVar);
 
+		for (int i = 0; i < varCPT.size(); i++)
+		{
+			if (!isRowCalculated[i])
+			{
+				isRowCalculated[i] = true;
+				String currentRow[] = varCPT.get(i);
+				double sumRows = Double.parseDouble(currentRow[currentRow.length - 1]);
+				for (int j = i + 1; j < varCPT.size(); j++)
+				{
+					if (!isRowCalculated[j])
+					{
+						String otherRow[] = varCPT.get(j);
+						boolean isMatch = true;
+						for (int k = 0; k < currentRow.length - 1 && isMatch; k++)
+						{
+							if (k != indexOfHidden)
+							{
+								if (!currentRow[k].equals(otherRow[k]))
+									isMatch = false;
+							}
+						}
+
+						if (isMatch)
+						{
+							isRowCalculated[j] = true;
+							sumRows += Double.parseDouble(otherRow[otherRow.length - 1]);
+						}
+					}
+				}
+				newVar.addEmptyRow();
+				int col = 0;
+				for (int l = 0; l < currentRow.length - 1; l++)
+				{
+					if (l != indexOfHidden)
+						newVar.fillRow(currentRow[l], col++);
+				}
+				newVar.fillRow("" + sumRows, col);
+			}
+		}
+
+		//		System.out.println(newVar);
+		return newVar;
+	}
+
+	private Var initNewVarSum(Var var, String hiddenVar) 
+	{
+		ArrayList<String> tempVars = new ArrayList<String>();
+		for (String parent : var.getParents())
+		{
+			if (!parent.equals(hiddenVar))
+			{
+				tempVars.add(parent);
+			}
+		}
+
+		if (!var.getName().equals(hiddenVar))
+			tempVars.add(var.getName());
+
+		System.out.println("varNewSum " + var + " hidden: "  + hiddenVar);
+		System.out.println(tempVars);
+		Var newVar = new Var(tempVars.get(tempVars.size() - 1));
+		for (int i = 0; i < tempVars.size() - 1; i++)
+			newVar.addParents(tempVars.get(i));
+
+		return newVar;
 	}
 
 	private ArrayList<Var> makeFactors(String[] hidden, HashMap<String, String> evidences, String varQuery) 
