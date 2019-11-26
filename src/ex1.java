@@ -10,7 +10,7 @@ import javafx.scene.Parent;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start("input2.txt");
+		new ex1().start("input.txt");
 	}
 
 	private HashMap<String, Var> mNetWork;

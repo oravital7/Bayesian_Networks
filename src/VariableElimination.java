@@ -7,6 +7,7 @@ import java.util.Map;
 public class VariableElimination {
 
 	private HashMap<String, Var> mNetWork;
+	private int mMultCount, mSumCount;
 
 	public VariableElimination(HashMap<String, Var> netWork) 
 	{
@@ -25,13 +26,13 @@ public class VariableElimination {
 		for (String tempEvidence : query.substring(query.indexOf('|') + 1, query.indexOf(')')).split(","))
 			evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
 		System.out.println("newwwwwwwwwwwwwwwwww");
-		startAlgo(hidden, evidences, varQuery);
-		return null;
+		return startAlgo(hidden, evidences, varQuery);
 	}
 
-	private void startAlgo(String[] hidden, HashMap<String, String> evidences, String[] varQuery) 
+	private String startAlgo(String[] hidden, HashMap<String, String> evidences, String[] varQuery) 
 	{
 		ArrayList<Var> factors = makeFactors(hidden, evidences, varQuery[0]);
+		mSumCount = mMultCount = 0;
 
 		for (String hiddenVar : hidden)
 		{
@@ -56,6 +57,7 @@ public class VariableElimination {
 
 
 		}
+		
 		while (factors.size() > 1)
 		{
 			int indexs[] = {0, 1};
@@ -63,9 +65,25 @@ public class VariableElimination {
 		}
 		
 		normalize(factors.get(0));
-
 		System.out.println("factors:");
 		System.out.println(factors);
+		
+		return calcFinalResult(factors.get(0), varQuery);
+	}
+
+	private String calcFinalResult(Var var, String[] varQuery) 
+	{
+		mSumCount += var.getCPT().size() - 1;
+		int indexOfResult = var.indexOf(varQuery[0]);
+		
+		String result = "," + mSumCount + "," + mMultCount;
+		for (String s[] : var.getCPT())
+		{
+			if (s[indexOfResult].equals(varQuery[1]))
+				return result = String.format("%.5f", Double.parseDouble(s[s.length - 1])) + result;
+		}
+		
+		return null;
 	}
 
 	private void normalize(Var var) 
@@ -83,9 +101,6 @@ public class VariableElimination {
 		Var var1 = factors.get(indexMinimalPair[0]);
 		Var var2 = factors.get(indexMinimalPair[1]);
 		Var result = new Var(hiddenVar);
-		System.out.println("join var1: " + var1 + " var2: " + var2);
-
-		//		System.out.println("choose: " + var1.getName() +", " + var2.getName() + " hiddenVar: " + hiddenVar);
 
 		initNewVarParent(result, var1, evidences, hiddenVar);
 		initNewVarParent(result, var2, evidences, hiddenVar);
@@ -104,7 +119,6 @@ public class VariableElimination {
 	private void joinVars(Var var1, Var var2, Var result, HashMap<String, String> evidences) 
 	{
 		HashMap<String, Integer> sharedVariable = makeSharedVariables(var1, var2, evidences);
-		//		System.out.println(sharedVariable);
 
 		for (int i = 0; i < var1.getCPT().size(); i++)
 		{
@@ -135,6 +149,7 @@ public class VariableElimination {
 
 	private void multiplyCol(String[] var1, String[] var2, Var result) 
 	{
+		mMultCount++;
 		double newValue = Double.parseDouble(var1[var1.length - 1]) * Double.parseDouble(var2[var2.length - 1]);
 		result.fillRow("" + newValue, result.getParents().size() + 1);
 	}
@@ -176,8 +191,14 @@ public class VariableElimination {
 					if (!var.getCPT().get(i)[keyCPTindex].equals(value))
 						var.getCPT().remove(i--);
 				}
-			}
-		});
+			}});
+		
+		for (int i = 0; i < var.getCPT().size(); i++)
+		{
+			String currentRow[] = var.getCPT().get(i);
+			if (Double.parseDouble(currentRow[currentRow.length - 1]) == 0)
+				var.getCPT().remove(i--);
+		}
 	}
 
 	/**
@@ -234,6 +255,7 @@ public class VariableElimination {
 						{
 							isRowCalculated[j] = true;
 							sumRows += Double.parseDouble(otherRow[otherRow.length - 1]);
+							mSumCount++;
 						}
 					}
 				}
