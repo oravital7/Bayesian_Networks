@@ -4,9 +4,16 @@ import java.util.HashSet;
 
 public class BayesBall {
 
+    /* ****************** Member class ******************** */
+	
 	private HashMap<String, Var> mNetWork;
 	private final String independent = "yes", dependent = "no";
 
+	
+	/* ***************************************************
+	 ***************** Public Methods *****************
+	 *************************************************** */
+	
 	public BayesBall(HashMap<String, Var> netWork)
 	{
 		mNetWork = netWork;
@@ -29,8 +36,8 @@ public class BayesBall {
 			shadesOrResetNet(evidenceNodes, true);
 		}
 
-		String result = acitvePaths(makePaths(source, target));
-		shadesOrResetNet(evidenceNodes, false);
+		final String result = acitvePaths(makePaths(source, target));  // find paths that legal or illegal
+		shadesOrResetNet(evidenceNodes, false); // return back all shades node to false before we leaving the function
 
 		return result;
 	}
@@ -40,8 +47,8 @@ public class BayesBall {
 	 *************************************************** */
 
 	/**
-	 * 
-	 * @param paths
+	 * By the rules of BayesBall alg we use dfs to find active paths otherwise is independent
+	 * @param paths - represent all possibles paths that exist between the nodes in the given query
 	 * @return
 	 */
 	private String acitvePaths(ArrayList<Node[]> paths) 
@@ -58,15 +65,22 @@ public class BayesBall {
 				}
 				else if (!currentNode.mShadeFlag && path[i].prevIsParent() && !path[i + 1].prevIsParent())
 				{
-					isActive = dfsSearchShadeNode(currentNode, new HashSet<String>());
+					isActive = dfsSearchShadeNode(currentNode, new HashSet<String>()); // Use DFS and find shades node that descendant of currentNode
 				}
 			}
 
 			if (isActive) return dependent;
 		}
+
 		return independent;
 	}
 
+	/**
+	 * Scan from currentNode and only with one direction by his childs
+	 * @param currentNode
+	 * @param visited
+	 * @return true - found shadeNode
+	 */
 	private boolean dfsSearchShadeNode(Var currentNode, HashSet<String> visited) {
 		if (currentNode.mShadeFlag)
 			return true;
@@ -85,6 +99,12 @@ public class BayesBall {
 		return result;
 	}
 
+	/**
+	 * given 2 nodes return all possibles paths between them
+	 * @param source
+	 * @param target
+	 * @return ArrayList of all possibles paths
+	 */
 	private ArrayList<Node[]> makePaths(String source, String target) 
 	{
 		ArrayList<Node[]> result = new ArrayList<Node[]>();
@@ -94,6 +114,12 @@ public class BayesBall {
 		return result;
 	}
 
+	/**
+	 * Simple DFS, adding path to array when we reach target
+	 * @param result
+	 * @param currentPath
+	 * @param target
+	 */
 	private void dfs(ArrayList<Node[]> result, Node currentPath[], String target) {
 		String currentNode = currentPath[currentPath.length - 1].getName();
 		if (currentNode.equals(target))
@@ -108,18 +134,32 @@ public class BayesBall {
 		findeNextNode(currentNodeVar.getParents(), result, currentPath, target, false);
 	}
 
+	/**
+	 * Find next node that not already exist in the path (prevent circular) and continue from there
+	 * @param nextNodes
+	 * @param result
+	 * @param currentPath
+	 * @param target
+	 * @param isParent
+	 */
 	private void findeNextNode(ArrayList<String> nextNodes, ArrayList<Node[]> result, Node[] currentPath, String target,
-			boolean isParent) 
+			boolean isParent)
 	{
 		for (String nextNode : nextNodes)
 		{
 			if (!contatin(currentPath, nextNode))
 			{
-				dfs(result, cloneAndAdd(currentPath, nextNode, isParent), target);
+				dfs(result, cloneAndAdd(currentPath, nextNode, isParent), target); // Important! clone path
 			}
 		}
 	}
 
+	/**
+	 * Method to check in simple array if variable exist on the path
+	 * @param currentPath
+	 * @param nextNode
+	 * @return true - exist
+	 */
 	private boolean contatin(Node[] currentPath, String nextNode) 
 	{
 		for (Node node : currentPath)
@@ -129,7 +169,14 @@ public class BayesBall {
 		}
 		return false;
 	}
-
+	
+	/**
+	 * Deep copy of currentPath and add new Node to the path
+	 * @param currentPath
+	 * @param currentNode
+	 * @param isParent
+	 * @return the new path
+	 */
 	private Node[] cloneAndAdd(Node currentPath[], String currentNode, boolean isParent)
 	{
 		Node newCurrentPath[] = new Node[currentPath.length + 1];
@@ -141,12 +188,23 @@ public class BayesBall {
 		return newCurrentPath;
 	}
 
-	private void shadesOrResetNet(ArrayList<String> evidenceNodes, boolean shadeReset) {
+	/**
+	 * Mark Shade (evidences) vars
+	 * @param evidenceNodes
+	 * @param shadeReset
+	 */
+	private void shadesOrResetNet(ArrayList<String> evidenceNodes, boolean shadeReset)
+	{
 		for (String node : evidenceNodes)
 			mNetWork.get(node).mShadeFlag = shadeReset;
 	}
 }
 
+/**
+ * Represent Node that belong to chain of nodes (Kind of one direction linked list)
+ * @author oravi
+ *
+ */
 class Node {
 
 	private boolean mPrevIsParent;  //  Edge created from son or parent

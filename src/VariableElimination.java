@@ -6,8 +6,14 @@ import java.util.Map;
 
 public class VariableElimination {
 
+	/* ****************** Member class ******************** */
+
 	private HashMap<String, Var> mNetWork;
 	private int mMultCount, mSumCount;
+
+	/* ***************************************************
+	 ***************** Public Methods ********************
+	 *************************************************** */
 
 	public VariableElimination(HashMap<String, Var> netWork) 
 	{
@@ -25,19 +31,23 @@ public class VariableElimination {
 			hidden = subQueryHidden.split("-");
 		for (String tempEvidence : query.substring(query.indexOf('|') + 1, query.indexOf(')')).split(","))
 			evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
-		
+
 		return startAlgo(hidden, evidences, varQuery);
 	}
+
+	/* ***************************************************
+	 ***************** Private Methods *******************
+	 *************************************************** */
 
 	private String startAlgo(String[] hidden, HashMap<String, String> evidences, String[] varQuery) 
 	{
 		mSumCount = mMultCount = 0;
-		String instantResult = instantResult(varQuery, evidences);
+		final String instantResult = instantResult(varQuery, evidences);
 		if (instantResult != null)
 			return instantResult;
-		
+
 		ArrayList<Var> factors = makeFactors(hidden, evidences, varQuery[0]);
-		
+
 		for (String hiddenVar : hidden)
 		{
 			while (true)
@@ -67,20 +77,20 @@ public class VariableElimination {
 		}
 
 		normalize(factors.get(0));
-		
+
 		return calcFinalResult(factors.get(0), varQuery);
 	}
 
 	private String instantResult(String[] varQuery, HashMap<String, String> evidences) 
 	{
 		Var varQueryInstance = mNetWork.get(varQuery[0]);
-		
+
 		for (String evidence : evidences.keySet())
 		{
 			if (varQueryInstance.indexOf(evidence) == -1)
 				return null;
 		}
-		
+
 		for (String row[] : varQueryInstance.getCPT()) // Find row that contain our result
 		{
 			boolean isRowResult = true;
@@ -95,11 +105,11 @@ public class VariableElimination {
 			if (isRowResult && row[varQueryInstance.indexOf(varQuery[0])].equals(varQuery[1]))  // Check query is same value in the row
 				return String.format("%.5f", Double.parseDouble(row[row.length - 1])) + ",0,0";
 		}
-		
+
 		return null;
 	}
 
-	private String calcFinalResult(Var var, String[] varQuery) 
+	private String calcFinalResult(Var var, String[] varQuery)
 	{
 		mSumCount += var.getCPT().size() - 1;
 		int indexOfResult = var.indexOf(varQuery[0]);
@@ -144,6 +154,13 @@ public class VariableElimination {
 		factors.add(result);
 	}
 
+	/**
+	 * Find corresponding rows according to the join rules
+	 * @param var1
+	 * @param var2
+	 * @param result
+	 * @param evidences
+	 */
 	private void joinVars(Var var1, Var var2, Var result, HashMap<String, String> evidences) 
 	{
 		HashMap<String, Integer> sharedVariable = makeSharedVariables(var1, var2, evidences);
@@ -420,8 +437,9 @@ public class VariableElimination {
 
 	private int[] findMinimalPair(String hiddenVar, ArrayList<Var> factors, HashMap<String, String> evidences) 
 	{
-		int minRows = Integer.MAX_VALUE;
+		int minRows[] = {Integer.MAX_VALUE, Integer.MAX_VALUE};
 		ArrayList<Integer> containsHidden = containsHidden(hiddenVar, factors);
+
 		if (containsHidden.size() == 0)
 			return null;
 		if (containsHidden.size() == 1)
@@ -435,8 +453,8 @@ public class VariableElimination {
 		{
 			for (int j = i + 1; j < containsHidden.size(); j++)
 			{
-				int tempRows = calcRows(factors.get(containsHidden.get(i)), factors.get(containsHidden.get(j)), evidences);
-				if (tempRows < minRows)
+				int tempRows[] = calcRowsCountAndASCII(factors.get(containsHidden.get(i)), factors.get(containsHidden.get(j)), evidences);
+				if (tempRows[0] < minRows[0] || (tempRows[0] == minRows[0] && tempRows[1] < minRows[1]))
 				{
 					minRows = tempRows;
 					result[0] = containsHidden.get(i);
@@ -448,17 +466,36 @@ public class VariableElimination {
 		return result;
 	}
 
-	private int calcRows(Var var1, Var var2, HashMap<String, String> evidences) 
+	/**
+	 * 
+	 * @param var1
+	 * @param var2
+	 * @param evidences
+	 * @return Number of expected rows of the new CPT table and number expected ASCII 
+	 */
+	private int[] calcRowsCountAndASCII(Var var1, Var var2, HashMap<String, String> evidences) 
 	{
 		HashMap<String, Integer> sharedVars = makeSharedVariables(var1, var2, evidences);
 
-		int result = 1;
+		int result[] = {1, 0};
 		for (String var : sharedVars.keySet())
-			result *= mNetWork.get(var).NumberOfValues();
+		{
+			result[0] *= mNetWork.get(var).NumberOfValues();
+
+			for (int i = 0; i < var.length(); i++)
+				result[1] += var.charAt(i);
+		}
 
 		return result;
 	}
 
+	/**
+	 * Calculate all the shared Vars between two variables according parents and var name
+	 * @param var1
+	 * @param var2
+	 * @param evidences
+	 * @return
+	 */
 	HashMap<String, Integer> makeSharedVariables(Var var1, Var var2, HashMap<String, String> evidences)
 	{
 		HashMap<String, Integer> sharedVars = new HashMap<String, Integer>();
@@ -484,6 +521,11 @@ public class VariableElimination {
 		return sharedVars;
 	}
 
+	/**
+	 * Helper method to add value to HashMap with init Integer to 1
+	 * @param name
+	 * @param sharedVars
+	 */
 	private void addToMap(String name, HashMap<String, Integer> sharedVars) 
 	{
 		if (sharedVars.containsKey(name))
@@ -492,6 +534,12 @@ public class VariableElimination {
 			sharedVars.put(name, 1);
 	}
 
+	/**
+	 * 
+	 * @param hiddenVar
+	 * @param factors
+	 * @return Array of all vars that contains Hidden vars
+	 */
 	private ArrayList<Integer> containsHidden(String hiddenVar, ArrayList<Var> factors) 
 	{
 		ArrayList<Integer> result = new ArrayList<Integer>();

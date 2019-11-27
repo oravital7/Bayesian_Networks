@@ -13,10 +13,17 @@ import javafx.scene.Parent;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start("input.txt");
+		new ex1().start("input2.txt");
 	}
 
+	/* ****************** Member class ******************** */
+
 	private HashMap<String, Var> mNetWork;
+	
+	
+	/* ***************************************************
+	 ***************** Private Methods *****************
+	 *************************************************** */
 
 	public void start(String inputPath) 
 	{
@@ -51,12 +58,12 @@ public class ex1 {
 	/* ***************************************************
 	 ***************** Private Methods *****************
 	 *************************************************** */
-	
+
 	private void exportResultToFile(String result) throws IOException 
 	{
-		Files.write( Paths.get("output.txt"), result.getBytes());
+		Files.write(Paths.get("output.txt"), result.getBytes());
 	}
-	
+
 	private String startAnswer(Scanner sc, BayesBall baseBallAlg, VariableElimination variableEliminationAlg) 
 	{
 		String result = "", query = "";
