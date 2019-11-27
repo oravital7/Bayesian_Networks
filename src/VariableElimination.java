@@ -25,15 +25,19 @@ public class VariableElimination {
 			hidden = subQueryHidden.split("-");
 		for (String tempEvidence : query.substring(query.indexOf('|') + 1, query.indexOf(')')).split(","))
 			evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
-		System.out.println("newwwwwwwwwwwwwwwwww");
+		
 		return startAlgo(hidden, evidences, varQuery);
 	}
 
 	private String startAlgo(String[] hidden, HashMap<String, String> evidences, String[] varQuery) 
 	{
-		ArrayList<Var> factors = makeFactors(hidden, evidences, varQuery[0]);
 		mSumCount = mMultCount = 0;
-
+		String instantResult = instantResult(varQuery, evidences);
+		if (instantResult != null)
+			return instantResult;
+		
+		ArrayList<Var> factors = makeFactors(hidden, evidences, varQuery[0]);
+		
 		for (String hiddenVar : hidden)
 		{
 			while (true)
@@ -54,35 +58,59 @@ public class VariableElimination {
 					joinFactors(hiddenVar, indexMinimalPair, factors, evidences);
 				}
 			}
-
-
 		}
-		
+
 		while (factors.size() > 1)
 		{
 			int indexs[] = {0, 1};
 			joinFactors(varQuery[0], indexs, factors, evidences);
 		}
-		
+
 		normalize(factors.get(0));
-		System.out.println("factors:");
-		System.out.println(factors);
 		
 		return calcFinalResult(factors.get(0), varQuery);
+	}
+
+	private String instantResult(String[] varQuery, HashMap<String, String> evidences) 
+	{
+		Var varQueryInstance = mNetWork.get(varQuery[0]);
+		
+		for (String evidence : evidences.keySet())
+		{
+			if (varQueryInstance.indexOf(evidence) == -1)
+				return null;
+		}
+		
+		for (String row[] : varQueryInstance.getCPT()) // Find row that contain our result
+		{
+			boolean isRowResult = true;
+			for (String parent : varQueryInstance.getParents())
+			{
+				if (!row[varQueryInstance.indexOf(parent)].equals(evidences.get(parent)))
+				{
+					isRowResult = false;
+					break;
+				}
+			}
+			if (isRowResult && row[varQueryInstance.indexOf(varQuery[0])].equals(varQuery[1]))  // Check query is same value in the row
+				return String.format("%.5f", Double.parseDouble(row[row.length - 1])) + ",0,0";
+		}
+		
+		return null;
 	}
 
 	private String calcFinalResult(Var var, String[] varQuery) 
 	{
 		mSumCount += var.getCPT().size() - 1;
 		int indexOfResult = var.indexOf(varQuery[0]);
-		
+
 		String result = "," + mSumCount + "," + mMultCount;
 		for (String s[] : var.getCPT())
 		{
 			if (s[indexOfResult].equals(varQuery[1]))
 				return result = String.format("%.5f", Double.parseDouble(s[s.length - 1])) + result;
 		}
-		
+
 		return null;
 	}
 
@@ -91,7 +119,7 @@ public class VariableElimination {
 		double sumRows = 0;
 		for (String row[] : var.getCPT())
 			sumRows += Double.parseDouble(row[row.length - 1]);
-		
+
 		for (String row[] : var.getCPT())
 			row[row.length - 1] = "" + (Double.parseDouble(row[row.length - 1]) / sumRows);
 	}
@@ -182,22 +210,22 @@ public class VariableElimination {
 	 */
 	private void cleanCPTevidences(Var var, HashMap<String, String> evidences) 
 	{
-		evidences.forEach((key, value) -> {
-			int keyCPTindex = var.indexOf(key);
-			if (keyCPTindex != -1)
-			{
-				for (int i = 0; i < var.getCPT().size(); i++)
-				{
-					if (!var.getCPT().get(i)[keyCPTindex].equals(value))
-						var.getCPT().remove(i--);
-				}
-			}});
-		
 		for (int i = 0; i < var.getCPT().size(); i++)
 		{
 			String currentRow[] = var.getCPT().get(i);
 			if (Double.parseDouble(currentRow[currentRow.length - 1]) == 0)
+			{
 				var.getCPT().remove(i--);
+			}
+			else 
+			{
+				for (Map.Entry<String, String> set : evidences.entrySet())
+				{
+					int keyCPTindex = var.indexOf(set.getKey());
+					if (keyCPTindex != -1 && !currentRow[keyCPTindex].equals(set.getValue()))
+						var.getCPT().remove(i--);
+				}
+			}
 		}
 	}
 
@@ -215,19 +243,17 @@ public class VariableElimination {
 			if (!evidences.containsKey(parent) && !parent.equals(hiddenVar) && !newVar.getParents().contains(parent))
 				newVar.addParents(parent);
 		}
-		
+
 		if (!evidences.containsKey(var.getName()) && !var.getName().equals(hiddenVar) && !var.getParents().contains(var.getName()))
 			newVar.addParents(var.getName());
 	}
 
 	private Var sumFactors(String hiddenVar, Var var) 
 	{
-		//		System.out.println(var);
 		int indexOfHidden = var.indexOf(hiddenVar);
 		boolean isRowCalculated[] = new boolean[var.getCPT().size()];
 		ArrayList<String[]> varCPT = var.getCPT();
 		Var newVar = initNewVarSum(var, hiddenVar);
-		//		System.out.println("new var: " + newVar);
 
 		for (int i = 0; i < varCPT.size(); i++)
 		{
@@ -259,6 +285,7 @@ public class VariableElimination {
 						}
 					}
 				}
+
 				newVar.addEmptyRow();
 				int col = 0;
 				for (int l = 0; l < currentRow.length - 1; l++)
@@ -270,26 +297,27 @@ public class VariableElimination {
 			}
 		}
 
-		//		System.out.println(newVar);
 		return newVar;
 	}
 
+	/**
+	 * Prepare Var result of the Eliminate action
+	 * @param var
+	 * @param hiddenVar
+	 * @return
+	 */
 	private Var initNewVarSum(Var var, String hiddenVar) 
 	{
 		ArrayList<String> tempVars = new ArrayList<String>();
 		for (String parent : var.getParents())
 		{
 			if (!parent.equals(hiddenVar))
-			{
 				tempVars.add(parent);
-			}
 		}
 
 		if (!var.getName().equals(hiddenVar))
 			tempVars.add(var.getName());
 
-		System.out.println("varNewSum " + var + " hidden: "  + hiddenVar);
-		System.out.println(tempVars);
 		Var newVar = new Var(tempVars.get(tempVars.size() - 1));
 		for (int i = 0; i < tempVars.size() - 1; i++)
 			newVar.addParents(tempVars.get(i));
@@ -297,6 +325,13 @@ public class VariableElimination {
 		return newVar;
 	}
 
+	/**
+	 * Compute factors and insert them to ArrayList
+	 * @param hidden
+	 * @param evidences
+	 * @param varQuery
+	 * @return
+	 */
 	private ArrayList<Var> makeFactors(String[] hidden, HashMap<String, String> evidences, String varQuery) 
 	{
 		ArrayList<Var> factors = new ArrayList<Var>();
@@ -316,6 +351,11 @@ public class VariableElimination {
 		return factors;
 	}
 
+	/**
+	 * Remove from factors list every vars that instant valued
+	 * @param factors
+	 * @param evidences
+	 */
 	private void removeInstantiatedOneValued(ArrayList<Var> factors, HashMap<String, String> evidences) 
 	{
 		for (int i = 0; i < factors.size(); i++)
@@ -326,19 +366,25 @@ public class VariableElimination {
 			if (!evidences.containsKey(factors.get(i).getName()))
 				isOneValued = false;
 
-			for (int j = 0; j < parents.size() && isOneValued; j++)
+			for (int j = 0; j < parents.size() && isOneValued; j++) // if this var contain all evidences so it's one valued
 			{
 				if (!evidences.containsKey(parents.get(j)))
 					isOneValued = false;
 			}
 
 			if (isOneValued)
-			{
 				factors.remove(i--);
-			}
 		}
 	}
 
+	/**
+	 * 
+	 * @param currentVar
+	 * @param evidences
+	 * @param varQuery
+	 * @param visited
+	 * @return True if Var is Ancestor of evidences or var-query else return false
+	 */
 	private boolean dfsFindAncestor(String currentVar, HashMap<String, String> evidences, String varQuery, HashSet<String> visited) 
 	{
 		if (conatinInQueryEvidence(currentVar, evidences, varQuery))

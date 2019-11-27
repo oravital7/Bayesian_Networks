@@ -26,14 +26,14 @@ Var J
 Values: true,false
 Parents: A
 CPT:
-true,=true,0.0
+true,=true,0.9
 false,=true,0.05
 
 Var M
 Values: true,false
 Parents: A
 CPT:
-true,=true,0
+true,=true,0.7
 false,=true,0.01
 
 Queries
