@@ -2,13 +2,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+/**
+ * This class represent variable in the given network
+ * @author oravi
+ *
+ */
 public class Var {
+
 	private ArrayList<String> mParents, mChilds, mValues;
 	private ArrayList<String[]> mCPT;
 	private HashMap<String, Integer> mCachedIndex;
 	private String mName;
 	boolean mShadeFlag;
 
+	/* ********* Constructors ********* */
+	
 	public Var(String name)
 	{
 		mName = name;
@@ -30,6 +38,8 @@ public class Var {
 		mCachedIndex = new HashMap<String, Integer>();
 		mShadeFlag = var.mShadeFlag;
 	}
+	
+	/* *********** Public methods *********** */
 
 	public void addValues(String values) 
 	{
@@ -48,7 +58,7 @@ public class Var {
 			return;
 
 		ArrayList<String> completeValue = new ArrayList<String>(mValues); // Save result for complete row  (1 - completeValueProb)
-		double completeValueProb = 0;
+		double completeValueProb = 0; // (1 - P)
 
 		String valueArr[] = value.split(",");
 
@@ -89,6 +99,11 @@ public class Var {
 		mCPT.get(currentRow)[col] = "" + (1 - completeValueProb);
 	}
 
+	/**
+	 *
+	 * @param var
+	 * @return column index of specific var by name that exist in the CPT Array
+	 */
 	public int indexOf(String var)
 	{
 		Integer result = mCachedIndex.get(var);
@@ -116,6 +131,8 @@ public class Var {
 
 	public void addChild(String child) { mChilds.add(child); }
 
+	/* ******************* Getters ******************* */
+
 	public String getName() { return mName; }
 
 	public ArrayList<String> getParents() { return mParents; }
@@ -124,16 +141,16 @@ public class Var {
 
 	public ArrayList<String[]> getCPT() { return mCPT; }
 
-	public int NumberOfValues()	{ return mValues.size(); }
+	public int getNumberOfValues()	{ return mValues.size(); }
 
 	@Override
 	public String toString() 
 	{
 		String result = "Var [mName=" + mName + ", mParents=" + mParents + ", mChilds=" + mChilds + ", mValues=" + mValues +
-				", mCPT= " + mCPT.size() + ", mShadeFlag:"  + mShadeFlag + "]\nCPT: \n";
+				", mCPT= " + mCPT.size() + ", mShadeFlag:"  + mShadeFlag + "]\nCPT:";
 
 		for (String s[] : mCPT)
-			result += Arrays.toString(s) + '\n';
+			result += '\n' + Arrays.toString(s);
 
 		return result;
 	}

@@ -3,26 +3,20 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Scanner;
-
-import javafx.scene.Parent;
 
 public class ex1 {
 	public static void main(String[] args) {
-		new ex1().start("input2.txt");
+		new ex1().start("input.txt");
 	}
 
 	/* ****************** Member class ******************** */
 
 	private HashMap<String, Var> mNetWork;
-	
-	
+
 	/* ***************************************************
-	 ***************** Private Methods *****************
+	 ***************** Privates Methods *****************
 	 *************************************************** */
 
 	public void start(String inputPath) 
@@ -35,10 +29,8 @@ public class ex1 {
 		Scanner sc;
 		try {
 			sc = new Scanner(fileInput);
-			sc.nextLine();
 
-			String lineInput = sc.nextLine();
-			buildVars(lineInput.substring(lineInput.indexOf(' ') + 1));
+			buildVars(sc);
 			buildVarProperties(sc);
 			String result = startAnswer(sc, baseBallAlg, variableEliminationAlg);
 			exportResultToFile(result);
@@ -50,7 +42,7 @@ public class ex1 {
 			System.out.println("Unable write output file!");
 			e.printStackTrace();
 		} catch (Exception e) {
-			System.out.println("Something get wrong");
+			System.out.println("Something got wrong");
 			e.printStackTrace();
 		}
 	}
@@ -66,7 +58,7 @@ public class ex1 {
 
 	private String startAnswer(Scanner sc, BayesBall baseBallAlg, VariableElimination variableEliminationAlg) 
 	{
-		String result = "", query = "";
+		String result = "", query;
 		while(sc.hasNextLine())
 		{
 			query = sc.nextLine();
@@ -82,8 +74,14 @@ public class ex1 {
 		return result;
 	}
 
-	private void buildVars(String lineInput) 
+	private void buildVars(Scanner sc) 
 	{
+		String lineInput = "";
+		while (!lineInput.toLowerCase().contains("variables"))
+			lineInput = sc.nextLine();
+
+		lineInput = lineInput.replaceAll(" ", "").substring(lineInput.indexOf(':') + 1);
+
 		for (String var : lineInput.split(","))
 			mNetWork.put(var, new Var(var));
 	}
@@ -92,7 +90,7 @@ public class ex1 {
 	{
 		String inputLine = "";
 
-		while (!inputLine.contains("Queries"))
+		while (!inputLine.toLowerCase().contains("queries"))
 		{
 			inputLine = sc.nextLine();
 			if (inputLine.contains("Var"))
@@ -100,7 +98,9 @@ public class ex1 {
 				Var var = mNetWork.get(inputLine.split(" ")[1]);
 				var.addValues(sc.nextLine().split(" ")[1]);
 				addParents(sc.nextLine().split(" ")[1], var);
-				sc.nextLine();
+
+				while (!inputLine.toLowerCase().contains("cpt"))
+					inputLine = sc.nextLine();
 
 				while (!inputLine.isEmpty())
 				{

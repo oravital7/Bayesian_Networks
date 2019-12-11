@@ -36,7 +36,7 @@ public class VariableElimination {
 	}
 
 	/* ***************************************************
-	 ***************** Private Methods *******************
+	 ***************** Privates Methods *******************
 	 *************************************************** */
 
 	private String startAlgo(String[] hidden, HashMap<String, String> evidences, String[] varQuery) 
@@ -84,7 +84,7 @@ public class VariableElimination {
 	private String instantResult(String[] varQuery, HashMap<String, String> evidences) 
 	{
 		Var varQueryInstance = mNetWork.get(varQuery[0]);
-
+		
 		for (String evidence : evidences.keySet())
 		{
 			if (varQueryInstance.indexOf(evidence) == -1)
@@ -480,7 +480,7 @@ public class VariableElimination {
 		int result[] = {1, 0};
 		for (String var : sharedVars.keySet())
 		{
-			result[0] *= mNetWork.get(var).NumberOfValues();
+			result[0] *= mNetWork.get(var).getNumberOfValues();
 
 			for (int i = 0; i < var.length(); i++)
 				result[1] += var.charAt(i);
