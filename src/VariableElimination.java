@@ -453,7 +453,7 @@ public class VariableElimination {
 		{
 			for (int j = i + 1; j < containsHidden.size(); j++)
 			{
-				int tempRows[] = calcRowsCountAndASCII(factors.get(containsHidden.get(i)), factors.get(containsHidden.get(j)), evidences);
+				int tempRows[] = expectedRowsAndASCII(factors.get(containsHidden.get(i)), factors.get(containsHidden.get(j)), evidences);
 				if (tempRows[0] < minRows[0] || (tempRows[0] == minRows[0] && tempRows[1] < minRows[1]))
 				{
 					minRows = tempRows;
@@ -473,7 +473,7 @@ public class VariableElimination {
 	 * @param evidences
 	 * @return Number of expected rows of the new CPT table and number expected ASCII 
 	 */
-	private int[] calcRowsCountAndASCII(Var var1, Var var2, HashMap<String, String> evidences) 
+	private int[] expectedRowsAndASCII(Var var1, Var var2, HashMap<String, String> evidences) 
 	{
 		HashMap<String, Integer> sharedVars = makeSharedVariables(var1, var2, evidences);
 

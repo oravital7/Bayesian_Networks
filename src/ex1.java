@@ -70,7 +70,7 @@ public class ex1 {
 			if (sc.hasNextLine())
 				result += '\n';
 		}
-		System.out.println(result);
+		
 		return result;
 	}
 
