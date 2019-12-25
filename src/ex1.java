@@ -6,9 +6,9 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Scanner;
 
-public class ex1 {
+public class Ex1 {
 	public static void main(String[] args) {
-		new ex1().start("input.txt");
+		new Ex1().start("input.txt");
 	}
 
 	/* ****************** Member class ******************** */
@@ -26,9 +26,8 @@ public class ex1 {
 		VariableElimination variableEliminationAlg = new VariableElimination(mNetWork);
 
 		File fileInput = new File(inputPath);
-		Scanner sc;
 		try {
-			sc = new Scanner(fileInput);
+			Scanner sc = new Scanner(fileInput);
 
 			buildVars(sc);
 			buildVarProperties(sc);
@@ -62,7 +61,7 @@ public class ex1 {
 		while(sc.hasNextLine())
 		{
 			query = sc.nextLine();
-			if (query.charAt(0) == 'P' || query.charAt(0) == 'p')
+			if ((query.charAt(0) == 'P' || query.charAt(0) == 'p') && query.charAt(1) == '(')
 				result += variableEliminationAlg.getQueryResult(query);
 			else
 				result += baseBallAlg.getQueryResult(query);
@@ -70,7 +69,7 @@ public class ex1 {
 			if (sc.hasNextLine())
 				result += '\n';
 		}
-		
+
 		return result;
 	}
 

@@ -28,9 +28,14 @@ public class VariableElimination {
 		HashMap<String, String> evidences = new HashMap<String, String>();
 
 		if (!subQueryHidden.isEmpty())
-			hidden = subQueryHidden.split("-");
+			hidden = subQueryHidden.split("-");		
 		for (String tempEvidence : query.substring(query.indexOf('|') + 1, query.indexOf(')')).split(","))
-			evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
+		{
+			if (!tempEvidence.isEmpty())
+			{
+				evidences.put(tempEvidence.substring(0, tempEvidence.indexOf('=')), tempEvidence.substring(tempEvidence.indexOf('=') + 1));
+			}
+		}
 
 		return startAlgo(hidden, evidences, varQuery);
 	}
@@ -84,7 +89,7 @@ public class VariableElimination {
 	private String instantResult(String[] varQuery, HashMap<String, String> evidences) 
 	{
 		Var varQueryInstance = mNetWork.get(varQuery[0]);
-		
+
 		for (String evidence : evidences.keySet())
 		{
 			if (varQueryInstance.indexOf(evidence) == -1)
