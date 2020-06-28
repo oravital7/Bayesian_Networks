@@ -61,7 +61,7 @@ public class Ex1 {
 		while(sc.hasNextLine())
 		{
 			query = sc.nextLine();
-			if ((query.charAt(0) == 'P' || query.charAt(0) == 'p') && query.charAt(1) == '(')
+			if (query.toLowerCase().charAt(0) == 'p' && query.charAt(1) == '(')
 				result += variableEliminationAlg.getQueryResult(query);
 			else
 				result += baseBallAlg.getQueryResult(query);
