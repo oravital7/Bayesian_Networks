@@ -33,7 +33,8 @@ public class Ex1 {
 			buildVarProperties(sc);
 			String result = startAnswer(sc, baseBallAlg, variableEliminationAlg);
 			exportResultToFile(result);
-
+			
+			System.out.println("Done, output result file location [" + System.getProperty("user.dir") + "]");
 			sc.close();
 		} catch (FileNotFoundException e) {
 			System.out.println("Unable read '"+ inputPath + "' , please make sure file exists!");
@@ -61,7 +62,7 @@ public class Ex1 {
 		while(sc.hasNextLine())
 		{
 			query = sc.nextLine();
-			if (query.toLowerCase().charAt(0) == 'p' && query.charAt(1) == '(')
+			if (Character.toLowerCase(query.charAt(0)) == 'p' && query.charAt(1) == '(')
 				result += variableEliminationAlg.getQueryResult(query);
 			else
 				result += baseBallAlg.getQueryResult(query);

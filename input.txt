@@ -37,4 +37,9 @@ true,=true,0.7
 false,=true,0.01
 
 Queries
-P(A=true|B=true),J-E-M
+B-E|
+B-E|J=true
+P(B=true|J=true,M=true),A-E
+P(B=true|J=true,M=true),E-A
+P(J=true|B=true),A-E-M
+P(J=true|B=true),M-E-A
